@@ -24,6 +24,18 @@ contract Genesis is ERC721 {
         _mint(msg.sender, 1);
     }
 
+    // 0-no tokens, 1-not soulbound, 2-soulbound
+    function getUserState(address _user) public view returns (uint256) {
+        if (balanceOf(_user) == 1) {
+            if (soulbound[_user]) {
+                return 2;
+            } else {
+                return 1;
+            }
+        }
+        return 0;
+    }
+
     function _beforeTokenTransfer(
         address from,
         address to,
@@ -36,7 +48,6 @@ contract Genesis is ERC721 {
             require(soulbound[msg.sender] == false, "Your token is bounded");
             require(balanceOf(to) == 0, "Receiver already has a token");
         }
-        require(soulbound[msg.sender], "No soulbound tokens");
         super._beforeTokenTransfer(from, to, id, batchSize);
     }
 }
