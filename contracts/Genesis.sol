@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.6;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract Genesis is ERC721 {
-    mapping(address => bool) soulbound;
+    mapping(address => uint256) userState;
 
     constructor(
         string memory _name,
@@ -13,27 +13,28 @@ contract Genesis is ERC721 {
         _mint(msg.sender, 1);
     }
 
-    // make your token untransferable
-    function makeSoulbound() public {
+    // free
+    function bind() public {
         require(balanceOf(msg.sender) == 1);
-        soulbound[msg.sender] = true;
+        userState[msg.sender] = 2;
     }
 
-    // free mint, 1-per-wallet
+    // pay
+    function tier() public {
+        if (userState[msg.sender] < 4) {
+            userState[msg.sender]++;
+        }
+    }
+
+    // pay
     function mint() public {
         _mint(msg.sender, 1);
+        userState[msg.sender] = 1;
     }
 
-    // 0-no tokens, 1-not soulbound, 2-soulbound
+    // 0-no tokens, 1-not soulbound, 2-soulbound(tier 1), 3-soulbound(tier 2), 4-soulbound(tier-3)
     function getUserState(address _user) public view returns (uint256) {
-        if (balanceOf(_user) == 1) {
-            if (soulbound[_user]) {
-                return 2;
-            } else {
-                return 1;
-            }
-        }
-        return 0;
+        return userState[_user];
     }
 
     function _beforeTokenTransfer(
@@ -45,7 +46,7 @@ contract Genesis is ERC721 {
         if (from == address(0)) {
             require(balanceOf(msg.sender) == 0, "1 per wallet");
         } else if (to != address(0)) {
-            require(soulbound[msg.sender] == false, "Your token is bounded");
+            require(userState[msg.sender] < 2, "Your token is bounded");
             require(balanceOf(to) == 0, "Receiver already has a token");
         }
         super._beforeTokenTransfer(from, to, id, batchSize);
